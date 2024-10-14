@@ -4,6 +4,9 @@ import random
 # for langGraph
 from langgraph.graph import StateGraph, START, END
 
+# To create image
+from utils.graph_img_generation import save_and_show_graph
+
 class State(TypedDict):
     graph_state: str
 
@@ -45,18 +48,7 @@ graph = builder.compile()
 
 
 # Save the graph image as a PNG file in the GraphImages directory
-img_path = "./GraphImages/simplegraph_image.png"
-with open(img_path, "wb") as f:
-    f.write(graph.get_graph().draw_mermaid_png())
-
-print(f"Graph saved as '{img_path}'")
-
-# Open and display the image using Pillow
-from PIL import Image as PILImage
-img = PILImage.open(img_path)
-
-# To open the image
-# img.show()
+save_and_show_graph(graph, filename="simplegraph_image", show_image=False)
 
 
 response = graph.invoke({"graph_state" : "Hi, this is Lance."})
