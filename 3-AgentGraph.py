@@ -25,7 +25,7 @@ OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 
 
 # defining the LLM
-llm = ChatOpenAI(openai_api_key=OPENAI_API_KEY)
+llm = ChatOpenAI(model = "gpt-4o-mini",openai_api_key=OPENAI_API_KEY)
 
 
 
@@ -111,7 +111,7 @@ save_and_show_graph(agent_graph, filename="agentgraph_image", show_image=False)
 
 
 # To run the Graphs
-user_msg = "2+3+4-2*2/3."
+user_msg = "7+3+4-2."
 messages = [HumanMessage(content=user_msg)]
 messages = agent_graph.invoke({"messages": messages})
 for m in messages['messages']:

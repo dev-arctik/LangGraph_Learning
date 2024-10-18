@@ -28,7 +28,7 @@ OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 
 
 # defining the LLM
-llm = ChatOpenAI(openai_api_key=OPENAI_API_KEY)
+llm = ChatOpenAI(model = "gpt-4o-mini", openai_api_key=OPENAI_API_KEY)
 
 # defining a memory location
 memory = MemorySaver()
