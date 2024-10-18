@@ -1,0 +1,139 @@
+[33mcommit 864e84e236533e6bfeede375f85dc67befbb76f2[m[33m ([m[1;36mHEAD -> [m[1;32mmaster[m[33m)[m
+Author: Devansh <devansh.arctikcircle@gmail.com>
+Date:   Mon Oct 14 22:37:52 2024 +0530
+
+    ToolGraph: Created graph with tool and also a util to create image
+
+[1mdiff --git a/1-SimpleGraph.py b/1-SimpleGraph.py[m
+[1mindex 716e46b..d1bbc97 100644[m
+[1m--- a/1-SimpleGraph.py[m
+[1m+++ b/1-SimpleGraph.py[m
+[36m@@ -4,6 +4,9 @@[m [mimport random[m
+ # for langGraph[m
+ from langgraph.graph import StateGraph, START, END[m
+ [m
+[32m+[m[32m# To create image[m
+[32m+[m[32mfrom utils.graph_img_generation import save_and_show_graph[m
+[32m+[m
+ class State(TypedDict):[m
+     graph_state: str[m
+ [m
+[36m@@ -45,18 +48,7 @@[m [mgraph = builder.compile()[m
+ [m
+ [m
+ # Save the graph image as a PNG file in the GraphImages directory[m
+[31m-img_path = "./GraphImages/simplegraph_image.png"[m
+[31m-with open(img_path, "wb") as f:[m
+[31m-    f.write(graph.get_graph().draw_mermaid_png())[m
+[31m-[m
+[31m-print(f"Graph saved as '{img_path}'")[m
+[31m-[m
+[31m-# Open and display the image using Pillow[m
+[31m-from PIL import Image as PILImage[m
+[31m-img = PILImage.open(img_path)[m
+[31m-[m
+[31m-# To open the image[m
+[31m-# img.show()[m
+[32m+[m[32msave_and_show_graph(graph, filename="simplegraph_image", show_image=False)[m
+ [m
+ [m
+ response = graph.invoke({"graph_state" : "Hi, this is Lance."})[m
+[1mdiff --git a/2-ToolGraph.py b/2-ToolGraph.py[m
+[1mnew file mode 100644[m
+[1mindex 0000000..202ab80[m
+[1m--- /dev/null[m
+[1m+++ b/2-ToolGraph.py[m
+[36m@@ -0,0 +1,56 @@[m
+[32m+[m[32mfrom langchain_openai import ChatOpenAI[m
+[32m+[m
+[32m+[m[32m# to build graph[m
+[32m+[m[32mfrom langgraph.graph import StateGraph, START, END[m
+[32m+[m[32mfrom langgraph.graph import MessagesState[m
+[32m+[m[32mfrom langgraph.prebuilt import ToolNode[m
+[32m+[m[32mfrom langgraph.prebuilt import tools_condition[m
+[32m+[m
+[32m+[m[32m# To create image[m
+[32m+[m[32mfrom utils.graph_img_generation import save_and_show_graph[m
+[32m+[m
+[32m+[m[32m# for printing messages[m
+[32m+[m[32mfrom langchain_core.messages import HumanMessage[m
+[32m+[m
+[32m+[m[32m# tool[m
+[32m+[m[32mdef multiply(a: int, b: int) -> int:[m
+[32m+[m[32m    """Multiply a and b.[m
+[32m+[m
+[32m+[m[32m    Args:[m
+[32m+[m[32m        a: first int[m
+[32m+[m[32m        b: second int[m
+[32m+[m[32m    """[m
+[32m+[m[32m    return a * b[m
+[32m+[m
+[32m+[m[32mllm = ChatOpenAI()[m
+[32m+[m[32mllm_with_tools = llm.bind_tools([multiply])[m
+[32m+[m
+[32m+[m
+[32m+[m[32m# Node[m
+[32m+[m[32mdef tool_calling_llm(state: MessagesState):[m
+[32m+[m[32m    return {"messages": [llm_with_tools.invoke(state["messages"])]}[m
+[32m+[m
+[32m+[m[32m# Build graph[m
+[32m+[m[32mbuilder = StateGraph(MessagesState)[m
+[32m+[m[32mbuilder.add_node("tool_calling_llm", tool_calling_llm)[m
+[32m+[m[32mbuilder.add_node("tools", ToolNode([multiply]))[m
+[32m+[m[32mbuilder.add_edge(START, "tool_calling_llm")[m
+[32m+[m[32mbuilder.add_conditional_edges([m
+[32m+[m[32m    "tool_calling_llm",[m
+[32m+[m[32m    # If the latest message (result) from assistant is a tool call -> tools_condition routes to tools[m
+[32m+[m[32m    # If the latest message (result) from assistant is a not a tool call -> tools_condition routes to END[m
+[32m+[m[32m    tools_condition,[m
+[32m+[m[32m)[m
+[32m+[m[32mbuilder.add_edge("tools", END)[m
+[32m+[m[32mgraph = builder.compile()[m
+[32m+[m
+[32m+[m
+[32m+[m[32m# Save the graph image as a PNG file in the GraphImages directory[m
+[32m+[m[32m# Use the utility function to save and optionally show the graph[m
+[32m+[m[32msave_and_show_graph(graph, filename="toolgraph_image", show_image=False)[m
+[32m+[m
+[32m+[m[32muser_msg = "multiply 2 and 3 and 6."[m
+[32m+[m[32mmessages = [HumanMessage(content=user_msg)][m
+[32m+[m[32mmessages = graph.invoke({"messages": messages})[m
+[32m+[m[32mfor m in messages['messages']:[m
+[32m+[m[32m    m.pretty_print()[m
+\ No newline at end of file[m
+[1mdiff --git a/GraphImages/toolgraph_image.png b/GraphImages/toolgraph_image.png[m
+[1mnew file mode 100644[m
+[1mindex 0000000..236611d[m
+Binary files /dev/null and b/GraphImages/toolgraph_image.png differ
+[1mdiff --git a/utils/graph_img_generation.py b/utils/graph_img_generation.py[m
+[1mnew file mode 100644[m
+[1mindex 0000000..38c6c4f[m
+[1m--- /dev/null[m
+[1m+++ b/utils/graph_img_generation.py[m
+[36m@@ -0,0 +1,26 @@[m
+[32m+[m[32mimport os[m
+[32m+[m[32mfrom PIL import Image as PILImage[m
+[32m+[m
+[32m+[m[32mdef save_and_show_graph(graph, filename: str, show_image: bool = False):[m
+[32m+[m[32m    """[m
+[32m+[m[32m    Saves the graph image and optionally displays it.[m
+[32m+[m
+[32m+[m[32m    Args:[m
+[32m+[m[32m        graph: The compiled graph object.[m
+[32m+[m[32m        filename: The custom name for the image file (without extension).[m
+[32m+[m[32m        show_image: Boolean flag to display the image after saving.[m
+[32m+[m[32m    """[m
+[32m+[m[32m    # Ensure the GraphImages directory exists[m
+[32m+[m[32m    os.makedirs("GraphImages", exist_ok=True)[m
+[32m+[m
+[32m+[m[32m    # Save the graph image as a PNG file in the GraphImages directory[m
+[32m+[m[32m    img_path = f"./GraphImages/{filename}.png"[m
+[32m+[m[32m    with open(img_path, "wb") as f:[m
+[32m+[m[32m        f.write(graph.get_graph().draw_mermaid_png())[m
+[32m+[m
+[32m+[m[32m    print(f"Graph saved as '{img_path}'")[m
+[32m+[m
+[32m+[m[32m    # Open and optionally display the image[m
+[32m+[m[32m    if show_image:[m
+[32m+[m[32m        img = PILImage.open(img_path)[m
+[32m+[m[32m        img.show()[m

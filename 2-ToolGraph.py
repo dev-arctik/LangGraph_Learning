@@ -1,3 +1,6 @@
+import os
+import dotenv
+
 from langchain_openai import ChatOpenAI
 
 # to build graph
@@ -12,7 +15,20 @@ from utils.graph_img_generation import save_and_show_graph
 # for printing messages
 from langchain_core.messages import HumanMessage
 
-# tool
+# loading the env file
+dotenv.load_dotenv()
+
+# storing the API key
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+
+
+
+# defining the LLM
+llm = ChatOpenAI(openai_api_key=OPENAI_API_KEY)
+
+
+
+# defining the tools
 def multiply(a: int, b: int) -> int:
     """Multiply a and b.
 
@@ -22,15 +38,21 @@ def multiply(a: int, b: int) -> int:
     """
     return a * b
 
-llm = ChatOpenAI()
+
+
+# binding tools with llm
 llm_with_tools = llm.bind_tools([multiply])
+
+
 
 
 # Node
 def tool_calling_llm(state: MessagesState):
     return {"messages": [llm_with_tools.invoke(state["messages"])]}
 
-# Build graph
+
+
+# Build the graph
 builder = StateGraph(MessagesState)
 builder.add_node("tool_calling_llm", tool_calling_llm)
 builder.add_node("tools", ToolNode([multiply]))
@@ -45,10 +67,12 @@ builder.add_edge("tools", END)
 graph = builder.compile()
 
 
-# Save the graph image as a PNG file in the GraphImages directory
 # Use the utility function to save and optionally show the graph
 save_and_show_graph(graph, filename="toolgraph_image", show_image=False)
 
+
+
+# To run the Graphs
 user_msg = "multiply 2 and 3 and 6."
 messages = [HumanMessage(content=user_msg)]
 messages = graph.invoke({"messages": messages})
