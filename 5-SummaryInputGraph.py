@@ -106,7 +106,7 @@ memory = MemorySaver()
 summarize_conversation_graph = workflow.compile(checkpointer=memory)
 
 # Use the utility function to save and optionally show the graph
-save_and_show_graph(summarize_conversation_graph, filename="AgentGraph_withMemory_image", show_image=True)
+save_and_show_graph(summarize_conversation_graph, filename="AgentGraph_withMemory_image", show_image=False)
 
 
 
