@@ -44,3 +44,8 @@ To get started with this project, follow these steps:
 You can run individual files with the following command:
 ```bash
 python [file_name.py]
+```
+
+## Acknowledgments
+
+I am learning from the [LangChain Academy](https://academy.langchain.com/).
