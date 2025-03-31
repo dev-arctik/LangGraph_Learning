@@ -1,6 +1,4 @@
 # Import necessary libraries
-import os
-import dotenv
 from langchain_openai import ChatOpenAI
 from typing import Annotated, TypedDict
 import operator
@@ -14,12 +12,7 @@ from langchain_community.tools.tavily_search import TavilySearchResults
 # Import custom function for image saving and display
 from utils.graph_img_generation import save_and_show_graph
 
-# Load environment variables from a .env file
-dotenv.load_dotenv()
-
-# Retrieve the API keys for OpenAI and Tavily from environment variables
-OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
-TAVILY_API_KEY = os.getenv("TAVILY_API_KEY")
+from config.secret_keys import OPENAI_API_KEY, TAVILY_API_KEY
 
 # Initialize the OpenAI language model with parameters
 llm = ChatOpenAI(model="gpt-4o-mini", openai_api_key=OPENAI_API_KEY, temperature=0)

@@ -1,6 +1,3 @@
-import os
-import dotenv
-
 from langchain_openai import ChatOpenAI
 
 from langgraph.graph import MessagesState
@@ -11,11 +8,7 @@ from langgraph.graph import StateGraph, START, END
 from utils.graph_img_generation import save_and_show_graph
 
 
-# loading the env file
-dotenv.load_dotenv()
-
-# storing the API key
-OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+from config.secret_keys import OPENAI_API_KEY
 
 
 

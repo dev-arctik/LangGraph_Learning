@@ -1,9 +1,5 @@
 # Breakpoints are a simple way to stop the graph to ask for approval before moving to the next nodes
 # We can also edit the graph after interrupting
-
-import os
-import dotenv
-
 from langchain_openai import ChatOpenAI
 
 # to build graph
@@ -20,11 +16,7 @@ from langchain_core.messages import HumanMessage
 # for adding checkpoint in memory
 from langgraph.checkpoint.memory import MemorySaver
 
-# loading the env file
-dotenv.load_dotenv()
-
-# storing the API key
-OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+from config.secret_keys import OPENAI_API_KEY
 
 
 

@@ -1,6 +1,3 @@
-import os
-import dotenv
-
 from langchain_openai import ChatOpenAI
 
 # to build graph
@@ -15,12 +12,7 @@ from utils.graph_img_generation import save_and_show_graph
 # for printing messages
 from langchain_core.messages import HumanMessage
 
-# loading the env file
-dotenv.load_dotenv()
-
-# storing the API key
-OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
-
+from config.secret_keys import OPENAI_API_KEY
 
 
 # defining the LLM

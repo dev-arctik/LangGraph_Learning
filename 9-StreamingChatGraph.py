@@ -4,17 +4,7 @@ from langchain.schema import HumanMessage, SystemMessage
 from langgraph.graph import MessagesState, START, END, StateGraph
 from langgraph.checkpoint.memory import MemorySaver
 
-import os
-from dotenv import load_dotenv
-
-import time
-
-# Load environment variables
-load_dotenv()
-OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
-
-if not OPENAI_API_KEY:
-    raise ValueError("OPENAI_API_KEY not found in environment variables")
+from config.secret_keys import OPENAI_API_KEY
 
 # Initialize LLM with streaming
 llm = ChatOpenAI(
@@ -46,7 +36,7 @@ builder.add_edge(START, 'Assistant')
 builder.add_edge('Assistant', END)
 
 # Compile the graph with memory checkpointing
-gabby_ai_graph = builder.compile(checkpointer=memory)
+ai_graph = builder.compile(checkpointer=memory)
 
 config = {"configurable": {"thread_id": "1234acb"}}
 
@@ -60,7 +50,7 @@ async def chat():
         humanMsg = [HumanMessage(content=user_msg)]
 
         print("Jarvis: ", end="", flush=True)
-        async for event in gabby_ai_graph.astream({"messages": humanMsg}, config=config, stream_mode="messages"):
+        async for event in ai_graph.astream({"messages": humanMsg}, config=config, stream_mode="messages"):
             message_chunk, metadata = event  # Unpack tuple
             print(message_chunk.content, end="", flush=True)
         print("")
