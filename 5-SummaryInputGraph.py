@@ -9,11 +9,12 @@ from utils.graph_img_generation import save_and_show_graph
 
 
 from config.secret_keys import OPENAI_API_KEY
+from config.config import get_llm
 
 
 
 # defining the LLM
-llm = ChatOpenAI(model = "gpt-4o-mini", openai_api_key=OPENAI_API_KEY)
+llm = get_llm()
 
 
 class State(MessagesState):
@@ -81,7 +82,7 @@ def should_continue(state: State):
         return "summarize_conversation"
     
     # Otherwise we can just end
-    return END
+    return "__end__"
 
 
 # Define a new graph
@@ -91,7 +92,11 @@ workflow.add_node(summarize_conversation)
 
 # Set the entrypoint as conversation
 workflow.add_edge(START, "conversation")
-workflow.add_conditional_edges("conversation", should_continue)
+workflow.add_conditional_edges("conversation", should_continue, 
+                               {
+    "summarize_conversation": "summarize_conversation",
+    "__end__": END
+                               })
 workflow.add_edge("summarize_conversation", END)
 
 # Compile
@@ -99,7 +104,7 @@ memory = MemorySaver()
 summarize_conversation_graph = workflow.compile(checkpointer=memory)
 
 # Use the utility function to save and optionally show the graph
-save_and_show_graph(summarize_conversation_graph, filename="AgentGraph_withMemory_image", show_image=False)
+save_and_show_graph(summarize_conversation_graph, filename="5-SummaryInputGraph", show_image=False)
 
 
 

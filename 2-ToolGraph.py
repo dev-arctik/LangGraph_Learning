@@ -13,10 +13,11 @@ from utils.graph_img_generation import save_and_show_graph
 from langchain_core.messages import HumanMessage
 
 from config.secret_keys import OPENAI_API_KEY
+from config.config import get_llm
 
 
 # defining the LLM
-llm = ChatOpenAI(model = "gpt-4o-mini", openai_api_key=OPENAI_API_KEY)
+llm = get_llm()
 
 
 
@@ -60,7 +61,7 @@ graph = builder.compile()
 
 
 # Use the utility function to save and optionally show the graph
-save_and_show_graph(graph, filename="toolgraph_image", show_image=False)
+save_and_show_graph(graph, filename="2-ToolGraph", show_image=False)
 
 
 

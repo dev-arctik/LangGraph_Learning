@@ -11,9 +11,12 @@ from typing import TypedDict, Annotated, List, Literal, Any
 from langgraph.checkpoint.memory import MemorySaver
 
 from config.secret_keys import OPENAI_API_KEY
+from config.config import get_llm
+
+from utils.graph_img_generation import save_and_show_graph
 
 # define LLM
-llm = ChatOpenAI(model="gpt-4o-mini", openai_api_key=OPENAI_API_KEY)
+llm = get_llm()
 
 # define Custom State
 class CustomState(TypedDict):
@@ -309,6 +312,9 @@ builder.add_edge("science_expert", END)
 builder.add_edge("history_expert", END)
 
 supervisor_graph = builder.compile(checkpointer=MemorySaver())
+
+# save and show the graph image
+save_and_show_graph(supervisor_graph, filename="13-SupervisorGraph", show_image=False)
 
 if __name__ == "__main__":
     # Specify a thread AKA session

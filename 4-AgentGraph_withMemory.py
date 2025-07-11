@@ -17,11 +17,12 @@ from langchain_core.messages import HumanMessage
 from langgraph.checkpoint.memory import MemorySaver
 
 from config.secret_keys import OPENAI_API_KEY
+from config.config import get_llm
 
 
 
 # defining the LLM
-llm = ChatOpenAI(model = "gpt-4o-mini", openai_api_key=OPENAI_API_KEY)
+llm = get_llm()
 
 # defining a memory location
 memory = MemorySaver()
@@ -107,7 +108,7 @@ agent_graph_withMemory = builder.compile(checkpointer=memory)
 
 
 # Use the utility function to save and optionally show the graph
-save_and_show_graph(agent_graph_withMemory, filename="AgentGraph_withMemory_image", show_image=False)
+save_and_show_graph(agent_graph_withMemory, filename="4-AgentGraph_withMemory", show_image=False)
 
 
 

@@ -5,14 +5,12 @@ from langgraph.graph import MessagesState, START, END, StateGraph
 from langgraph.checkpoint.memory import MemorySaver
 
 from config.secret_keys import OPENAI_API_KEY
+from config.config import get_llm
+
+from utils.graph_img_generation import save_and_show_graph
 
 # Initialize LLM with streaming
-llm = ChatOpenAI(
-    model='gpt-3.5-turbo',
-    api_key=OPENAI_API_KEY,
-    temperature=0.7,
-    streaming=True  # Enable streaming
-)
+llm = get_llm()
 
 # System prompt
 SYSTEM_PROMPT = """
@@ -38,6 +36,9 @@ builder.add_edge('Assistant', END)
 # Compile the graph with memory checkpointing
 ai_graph = builder.compile(checkpointer=memory)
 
+# Save and show the graph image
+save_and_show_graph(ai_graph, filename="9-StreamingChatGraph", show_image=False)
+
 config = {"configurable": {"thread_id": "1234acb"}}
 
 async def chat():
@@ -53,6 +54,7 @@ async def chat():
         async for event in ai_graph.astream({"messages": humanMsg}, config=config, stream_mode="messages"):
             message_chunk, metadata = event  # Unpack tuple
             print(message_chunk.content, end="", flush=True)
+            await asyncio.sleep(0.05)  # Simulate streaming delay
         print("")
 
 # Run the async chat function

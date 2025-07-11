@@ -48,7 +48,7 @@ graph = builder.compile()
 
 
 # Save the graph image as a PNG file in the GraphImages directory
-save_and_show_graph(graph, filename="simplegraph_image", show_image=False)
+save_and_show_graph(graph, filename="1-SimpleGraph", show_image=False)
 
 
 response = graph.invoke({"graph_state" : "Hi, this is Lance."})

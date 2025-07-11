@@ -14,6 +14,9 @@ import uuid
 import time
 
 from config.secret_keys import OPENAI_API_KEY
+from config.config import get_llm, get_embeddings, EMBEDDING_DIMENSIONS
+
+from utils.graph_img_generation import save_and_show_graph
 
 # System prompt
 SYSTEM_PROMPT = """
@@ -29,24 +32,17 @@ If you don't know something about a user, be honest about it.
 """
 
 # Initialize OpenAI components
-llm = ChatOpenAI(
-    model='gpt-3.5-turbo',
-    api_key=OPENAI_API_KEY,
-    temperature=0.7
-)
+llm = get_llm()
 
 # Create the embeddings model for semantic search
-embeddings = OpenAIEmbeddings(
-    model="text-embedding-3-small",
-    api_key=OPENAI_API_KEY
-)
+embeddings = get_embeddings()
 
 # Set up the in-memory store with embedding capabilities
 try:
     memory_store = InMemoryStore(
         index={
             "embed": embeddings,
-            "dims": 1536,  # Dimensions for text-embedding-3-small
+            "dims": EMBEDDING_DIMENSIONS,
         }
     )
     print("✅ Memory Store: Successfully initialized")
@@ -115,6 +111,9 @@ try:
 except Exception as e:
     print(f"❌ Graph Compilation Error: {e}")
     raise SystemExit("Graph compilation failed. Exiting...")
+
+# Save and show the graph image
+save_and_show_graph(memory_graph, filename="12-MemoryBetweenThreads", show_image=False)
 
 # Function to run automated tests
 def run_automated_test(graph, users):

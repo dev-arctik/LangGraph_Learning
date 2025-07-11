@@ -7,15 +7,16 @@ import operator
 from langgraph.graph import StateGraph, START, END
 from langchain_core.messages import HumanMessage, SystemMessage
 from langchain_community.document_loaders import WikipediaLoader
-from langchain_community.tools.tavily_search import TavilySearchResults
+from langchain_tavily import TavilySearch
 
 # Import custom function for image saving and display
 from utils.graph_img_generation import save_and_show_graph
 
 from config.secret_keys import OPENAI_API_KEY, TAVILY_API_KEY
+from config.config import get_llm
 
 # Initialize the OpenAI language model with parameters
-llm = ChatOpenAI(model="gpt-4o-mini", openai_api_key=OPENAI_API_KEY, temperature=0)
+llm = get_llm()
 
 # Define the structure of the state dictionary
 class State(TypedDict):
@@ -26,7 +27,7 @@ class State(TypedDict):
 # Define the function to retrieve documents from the web
 def search_web(state):
     """Retrieve search results from the web using TavilySearchResults."""
-    tavily_search = TavilySearchResults(max_results=3)  # Initialize Tavily search
+    tavily_search = TavilySearch(max_results=3)  # Initialize Tavily search
     search_docs = tavily_search.invoke(state['question'])  # Retrieve documents
     
     # Format search results for readability
@@ -92,7 +93,7 @@ builder.add_edge("generate_answer", END)
 parallel_websearch_graph = builder.compile()
 
 # Use the utility function to save and optionally show the generated graph
-save_and_show_graph(parallel_websearch_graph, filename="Parallel_WebSearchGraph_image", show_image=False)
+save_and_show_graph(parallel_websearch_graph, filename="8-ParallelWebSearchGraph", show_image=False)
 
 # test the graph
 result = parallel_websearch_graph.invoke({"question": "Tell me about hindu mythology and Chakra"})

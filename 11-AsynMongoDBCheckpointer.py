@@ -5,6 +5,9 @@ from langgraph.graph import MessagesState, START, END, StateGraph
 from langgraph.checkpoint.mongodb.aio import AsyncMongoDBSaver
 
 from config.secret_keys import OPENAI_API_KEY, MONGO_URI
+from config.config import get_llm
+
+from utils.graph_img_generation import save_and_show_graph
 
 # Import MongoDB client
 from motor.motor_asyncio import AsyncIOMotorClient
@@ -29,12 +32,7 @@ async def initialize_mongodb():
         raise SystemExit("MongoDB connection required. Exiting...")
 
 # Enable streaming in LLM initialization
-llm = ChatOpenAI(
-    model='gpt-3.5-turbo',
-    api_key=OPENAI_API_KEY,
-    temperature=0.7,
-    streaming=True  # Enable streaming
-)
+llm = get_llm()
 
 # System prompt
 SYSTEM_PROMPT = """
@@ -68,12 +66,15 @@ async def setup_and_run_chat():
     
     # Compile the graph with MongoDB checkpointing
     try:
-        gabby_ai_graph = builder.compile(checkpointer=mongodb_memory)
+        jarvis_ai_graph = builder.compile(checkpointer=mongodb_memory)
         print("✅ Graph compiled with MongoDB storage")
     except Exception as e:
         print(f"❌ Graph Compilation Error: {e}")
         raise SystemExit("Graph compilation failed. Exiting...")
     
+    # Save and show the graph image
+    save_and_show_graph(jarvis_ai_graph, filename="11-AsynMongoDBCheckpointer", show_image=False)
+
     config = {"configurable": {"thread_id": "1234acb"}}
     
     print("\n" + "="*50)
@@ -92,7 +93,7 @@ async def setup_and_run_chat():
         
         print("Jarvis: ", end="", flush=True)
         try:
-            async for event in gabby_ai_graph.astream({"messages": humanMsg}, config=config, stream_mode="messages"):
+            async for event in jarvis_ai_graph.astream({"messages": humanMsg}, config=config, stream_mode="messages"):
                 message_chunk, metadata = event  # Unpack tuple
                 if hasattr(message_chunk, 'content') and message_chunk.content is not None:
                     print(message_chunk.content, end="", flush=True)

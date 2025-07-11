@@ -4,7 +4,10 @@ from langchain.schema import HumanMessage, SystemMessage
 from langgraph.graph import MessagesState, START, END, StateGraph
 from langgraph.checkpoint.mongodb import MongoDBSaver
 
+from utils.graph_img_generation import save_and_show_graph
+
 from config.secret_keys import OPENAI_API_KEY, MONGO_URI
+from config.config import get_llm
 
 # Import MongoDB client
 from pymongo import MongoClient
@@ -24,11 +27,7 @@ except Exception as e:
     print(f"❌ MongoDB Error: {e}")
     raise SystemExit("MongoDB connection required. Exiting...")
 
-llm = ChatOpenAI(
-    model='gpt-3.5-turbo',
-    api_key=OPENAI_API_KEY,
-    temperature=0.7
-)
+llm = get_llm()
 
 # System prompt
 SYSTEM_PROMPT = """
@@ -55,13 +54,17 @@ builder.add_node('Assistant', Assistant)
 builder.add_edge(START, 'Assistant')
 builder.add_edge('Assistant', END)
 
+
 # Compile the graph with MongoDB checkpointing
 try:
-    gabby_ai_graph = builder.compile(checkpointer=mongodb_memory)
+    jarvis_ai_graph = builder.compile(checkpointer=mongodb_memory)
     print("✅ Graph compiled with MongoDB storage")
 except Exception as e:
     print(f"❌ Graph Compilation Error: {e}")
     raise SystemExit("Graph compilation failed. Exiting...")
+
+# Save and show the graph image
+save_and_show_graph(jarvis_ai_graph, filename="10-MongoDBCheckpointer", show_image=False)
 
 config = {"configurable": {"thread_id": "1234acb"}}
 
@@ -80,7 +83,7 @@ def chat():
         humanMsg = [HumanMessage(content=user_msg)]
 
         try:
-            response = gabby_ai_graph.invoke({"messages": humanMsg}, config=config)
+            response = jarvis_ai_graph.invoke({"messages": humanMsg}, config=config)
             print("Jarvis:", response['messages'][-1].content)
         except Exception as e:
             print(f"❌ Error: {e}")

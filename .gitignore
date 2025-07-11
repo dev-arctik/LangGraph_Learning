@@ -14,3 +14,6 @@ __pycache__/
 
 # Ignore log files
 *.log
+
+# poetry.lock file
+poetry.lock
