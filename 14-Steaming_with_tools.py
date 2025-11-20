@@ -1,13 +1,41 @@
-# 14-SupervisorGraph.py
-# We will create a graph with a supervisor node which will direct the user to the required node
+# 14-SupervisorGraph-Streaming.py
+# Streaming version of supervisor graph with tool support
+#
+# ============================================================================
+# ARCHITECTURE OVERVIEW:
+# ============================================================================
+#
+# This script implements a multi-agent supervisor pattern with real-time streaming.
+#
+# Graph Flow:
+# 1. START → supervisor (routes user to appropriate expert)
+# 2. supervisor → [assistant | math_expert | science_expert | history_expert]
+# 3. math_expert ↔ math_expert_tools (if calculations needed)
+# 4. experts → END
+#
+# Key Features:
+# - Async/await for non-blocking operations
+# - Real-time token-by-token streaming (ChatGPT-like experience)
+# - Tool support for math calculations
+# - Memory persistence across conversations (MemorySaver checkpointer)
+# - Structured output for routing decisions (Pydantic models)
+#
+# Streaming Implementation:
+# - Uses astream() with stream_mode="messages" for low-latency streaming
+# - Filters messages by node name to show only expert responses
+# - Filters by message type (AIMessageChunk) to exclude system/tool messages
+# - Prevents supervisor's JSON routing decisions from appearing in output
+#
+# ============================================================================
 
+import asyncio
 from langgraph.graph import StateGraph, START, END
 from langgraph.prebuilt import ToolNode, tools_condition
 from langchain_openai import ChatOpenAI
 from pydantic import BaseModel, Field
 from langchain_core.messages import HumanMessage, SystemMessage, AIMessage
 from langgraph.graph.message import add_messages, AnyMessage
-from typing import TypedDict, Annotated, List, Literal, Any
+from typing import TypedDict, Annotated, List, Literal
 from langgraph.checkpoint.memory import MemorySaver
 
 from config.secret_keys import OPENAI_API_KEY
@@ -15,22 +43,22 @@ from config.config import get_llm
 
 from utils.graph_img_generation import save_and_show_graph
 
-# define LLM
+# Define LLM
 llm = get_llm()
 
-# define Custom State
+# Define Custom State
 class CustomState(TypedDict):
     messages: Annotated[List[AnyMessage], add_messages]
     next_node: str
 
-# define Model for structured output
+# Define Model for structured output
 class SupervisorModel(BaseModel):
     next_node: Literal['ASSISTANT', 'MATH_EXPERT', 'SCIENCE_EXPERT', 'HISTORY_EXPERT'] = Field(
         ...,
         description="The next node to which the user should be directed. It can be 'ASSISTANT', 'MATH_EXPERT', 'SCIENCE_EXPERT', or 'HISTORY_EXPERT'.",
     )
 
-# define math tools
+# Define math tools
 def multiply(a: int, b: int) -> int:
     """Multiply a and b.
 
@@ -58,7 +86,7 @@ def subtract(a: int, b: int) -> int:
     """
     return a - b
 
-def divide(a: int, b: int) -> float:  # Fixed: should return float
+def divide(a: int, b: int) -> float:
     """Divide a and b.
 
     Args:
@@ -71,14 +99,14 @@ def divide(a: int, b: int) -> float:  # Fixed: should return float
 
 tools = [add, subtract, multiply, divide]
 
-# define NODES
+# Define NODES (Async versions)
 
 # SUPERVISOR NODE
-def supervisor(state):
+async def supervisor(state):
     """
     Supervisor node that directs the user to Math Expert, Science Expert, or History Expert.
     """
-    print("----------INSIDE SUPERVISOR----------")
+    # print("----------INSIDE SUPERVISOR----------")
 
     supervisor_prompt = """
     You are an intelligent routing supervisor responsible for directing users to the most appropriate expert based on their question.
@@ -97,9 +125,10 @@ def supervisor(state):
 
     llm_with_structured_output = llm.with_structured_output(SupervisorModel)
 
-    response = llm_with_structured_output.invoke(messages)
+    response = await llm_with_structured_output.ainvoke(messages)
 
-    print("Supervisor response:", response)
+    # Debug output moved to separate line for cleaner console output
+    # print(f"Supervisor routing to: {response.next_node}")
 
     return {
         **state,
@@ -107,22 +136,24 @@ def supervisor(state):
     }
 
 def supervisor_router(state):
-    print("----------INSIDE SUPERVISOR ROUTER----------")
+    """
+    Router function to determine the next node based on supervisor's decision.
+    """
+    # print("----------INSIDE SUPERVISOR ROUTER----------")
     next_node = state["next_node"]
 
     valid_nodes = ["ASSISTANT", "MATH_EXPERT", "SCIENCE_EXPERT", "HISTORY_EXPERT"]
     if next_node not in valid_nodes:
-        # default to the assistant if the next node is not valid
         print(f"Invalid next node '{next_node}'. Defaulting to 'ASSISTANT'.")
         next_node = "ASSISTANT"
     return next_node
 
 # ASSISTANT NODE
-def assistant(state):
+async def assistant(state):
     """
     Assistant node that provides general assistance.
     """
-    print("----------INSIDE ASSISTANT----------")
+    # print("----------INSIDE ASSISTANT----------")
 
     assistant_prompt = """
     You are a helpful general assistant. You provide clear, informative responses to a wide range of questions.
@@ -133,12 +164,6 @@ def assistant(state):
     - Assist with everyday questions and tasks
     - Offer guidance when users need general help
 
-    You can help with:
-    - General knowledge inquiries
-    - Math problems (basic)
-    - Science questions (basic)
-    - History questions (basic)
-
     Be friendly, concise, and helpful. If a question requires specialized expertise in math, science, or history, 
     let the user know they might want to ask about that specific topic to get more detailed help.
 
@@ -147,18 +172,18 @@ def assistant(state):
 
     messages = [SystemMessage(content=assistant_prompt)] + state["messages"]
 
-    response = llm.invoke(messages)
+    response = await llm.ainvoke(messages)
 
     return {
         "messages": response
     }
 
 # MATH EXPERT NODE
-def math_expert(state):
+async def math_expert(state):
     """
     Math expert node that provides answers to math-related questions.
     """
-    print("----------INSIDE MATH EXPERT----------")
+    # print("----------INSIDE MATH EXPERT----------")
 
     math_prompt = """
     You are a specialized mathematics expert with access to calculation tools. You excel at solving mathematical problems and explaining mathematical concepts.
@@ -190,18 +215,18 @@ def math_expert(state):
 
     llm_with_tools = llm.bind_tools(tools)
 
-    response = llm_with_tools.invoke(messages)
+    response = await llm_with_tools.ainvoke(messages)
 
     return {
         "messages": response
     }
 
 # SCIENCE EXPERT NODE
-def science_expert(state):
+async def science_expert(state):
     """
     Science expert node that provides answers to science-related questions.
     """
-    print("----------INSIDE SCIENCE EXPERT----------")
+    # print("----------INSIDE SCIENCE EXPERT----------")
 
     science_prompt = """
     You are a knowledgeable science expert specializing in multiple scientific disciplines including physics, chemistry, biology, earth sciences, and astronomy.
@@ -227,18 +252,18 @@ def science_expert(state):
 
     messages = [SystemMessage(content=science_prompt)] + state["messages"]
 
-    response = llm.invoke(messages)
+    response = await llm.ainvoke(messages)
 
     return {
         "messages": response
     }
 
 # HISTORY EXPERT NODE
-def history_expert(state):
+async def history_expert(state):
     """
     History expert node that provides answers to history-related questions.
     """
-    print("----------INSIDE HISTORY EXPERT----------")
+    # print("----------INSIDE HISTORY EXPERT----------")
 
     history_prompt = """
     You are a comprehensive history expert with deep knowledge spanning all periods of human history and various civilizations.
@@ -268,7 +293,7 @@ def history_expert(state):
 
     messages = [SystemMessage(content=history_prompt)] + state["messages"]
 
-    response = llm.invoke(messages)
+    response = await llm.ainvoke(messages)
 
     return {
         "messages": response
@@ -300,39 +325,123 @@ builder.add_conditional_edges(
 builder.add_conditional_edges(
     "math_expert",
     tools_condition, {
-        "tools": "math_expert_tools",  # Map "tools" to your tool node name
-        "__end__": END                 # Map "__end__" to END
+        "tools": "math_expert_tools",
+        "__end__": END
     }
 )
 builder.add_edge("math_expert_tools", "math_expert")
 
 builder.add_edge("assistant", END)
-builder.add_edge("math_expert", END)
 builder.add_edge("science_expert", END)
 builder.add_edge("history_expert", END)
 
 supervisor_graph = builder.compile(checkpointer=MemorySaver())
 
-# save and show the graph image
-save_and_show_graph(supervisor_graph, filename="13-SupervisorGraph", show_image=False)
+# Save and show the graph image
+save_and_show_graph(supervisor_graph, filename="14-SupervisorGraph-Streaming", show_image=False)
 
-if __name__ == "__main__":
-    # Specify a thread AKA session
+async def chat():
+    """
+    Async chat function with streaming support.
+    """
     config = {"configurable": {"thread_id": "1"}}
-
-    print("Welcome to the Supervisor Graph! Type 'exit' to quit.")
+    
+    print("Welcome to the Supervisor Graph with Streaming! Type 'exit' to quit.\n")
 
     while True:
         # Get user input
-        user_input = input("User: ")
+        user_input = input("You: ")
         if user_input.lower() == 'exit':
+            print("Ending the conversation. Goodbye!")
             break
         
         message = HumanMessage(content=user_input)
 
-        messages = supervisor_graph.invoke({"messages": [message]}, config)  # Fixed: wrap in list
-
-        for m in messages['messages']:
-            m.pretty_print()
+        print("Assistant: ", end="", flush=True)
         
-        print("\n\n")
+        # ============================================================================
+        # STREAMING EXPLANATION:
+        # ============================================================================
+        # 
+        # LangGraph supports multiple streaming modes. Here we use "messages" mode:
+        # 
+        # Stream Modes:
+        # - "values": Streams complete state updates after each node executes
+        # - "updates": Streams only the changes (deltas) to state
+        # - "messages": Streams individual message chunks as they're generated (best for real-time chat)
+        # 
+        # Why use stream_mode="messages"?
+        # - Provides token-by-token streaming for a smooth, ChatGPT-like experience
+        # - Each chunk arrives as soon as the LLM generates it (lowest latency)
+        # - User sees text appearing progressively rather than waiting for full response
+        # 
+        # Event Structure:
+        # Each event is a tuple: (message_chunk, metadata)
+        # - message_chunk: The actual message object (AIMessageChunk, HumanMessage, ToolMessage, etc.)
+        # - metadata: Dictionary containing information like:
+        #   * 'langgraph_node': Name of the node that produced this message
+        #   * 'langgraph_step': Step number in the execution
+        #   * 'langgraph_triggers': What triggered this node
+        # 
+        # Why We Need Filtering Conditions:
+        # 
+        # 1. Multiple Nodes Generate Messages:
+        #    - supervisor: Generates structured output {"next_node": "MATH_EXPERT"}
+        #    - assistant/experts: Generate actual text responses
+        #    - math_expert_tools: Generates tool call messages
+        #    Without filtering, ALL of these would be printed!
+        # 
+        # 2. Different Message Types:
+        #    - AIMessageChunk: Chunks of AI responses (what we want)
+        #    - HumanMessage: User input (already displayed)
+        #    - ToolMessage: Tool execution results (internal)
+        #    - SystemMessage: System prompts (internal)
+        # 
+        # Our Filtering Strategy:
+        # ============================================================================
+        
+        async for event in supervisor_graph.astream(
+            {"messages": [message]}, 
+            config=config, 
+            stream_mode="messages"
+        ):
+            # Unpack the event tuple
+            message_chunk, metadata = event
+            
+            # CONDITION 1: Filter by Node Name
+            # Extract which node produced this message
+            node_name = metadata.get('langgraph_node', '')
+            
+            # We only want to display messages from expert nodes, NOT from:
+            # - 'supervisor': Would show JSON like {"next_node": "ASSISTANT"}
+            # - 'math_expert_tools': Would show tool execution details
+            # This ensures we only show the final expert responses to the user
+            
+            # CONDITION 2: Check Message Type
+            # type(message_chunk).__name__ == 'AIMessageChunk' ensures we only print AI responses
+            # This filters out HumanMessage, ToolMessage, SystemMessage, etc.
+            
+            # CONDITION 3: Check for Content
+            # hasattr(message_chunk, 'content') - Ensure the chunk has a content attribute
+            # message_chunk.content - Ensure content is not empty/None
+            # Some chunks might be empty (e.g., initial chunks, tool calls without text)
+            
+            # COMBINED FILTER: All conditions must be True
+            if (hasattr(message_chunk, 'content') and 
+                message_chunk.content and 
+                type(message_chunk).__name__ == 'AIMessageChunk' and
+                node_name in ['assistant', 'math_expert', 'science_expert', 'history_expert']):
+                
+                # Print the chunk without newline, flush immediately for real-time display
+                print(message_chunk.content, end="", flush=True)
+                
+                # Small delay creates a more natural typing effect
+                # Remove this if you want maximum speed
+                await asyncio.sleep(0.01)
+        
+        # Print newline after streaming completes
+        print("\n")
+
+if __name__ == "__main__":
+    # Run the async chat function
+    asyncio.run(chat())

@@ -2,7 +2,7 @@
 # For documentation - https://langchain-ai.github.io/langgraph/how-tos/cross_thread_persistence/
 
 from langchain_openai import ChatOpenAI, OpenAIEmbeddings
-from langchain.schema import HumanMessage, SystemMessage
+from langchain_core.messages import HumanMessage, SystemMessage
 from langgraph.graph import MessagesState, START, END, StateGraph
 from langgraph.checkpoint.memory import MemorySaver
 from langgraph.store.memory import InMemoryStore

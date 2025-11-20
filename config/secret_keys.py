@@ -17,7 +17,7 @@ from dotenv import load_dotenv
 from pathlib import Path
 
 # Get the parent directory of AIEngine
-BASE_DIR = Path(__file__).resolve().parent.parent.parent
+BASE_DIR = Path(__file__).resolve().parent.parent
 
 # Construct path to .env file
 ENV_PATH = BASE_DIR / '.env'
@@ -35,3 +35,10 @@ MONGO_URI = os.getenv("MONGO_URI")
 TAVILY_API_KEY = os.getenv("TAVILY_API_KEY")
 if not TAVILY_API_KEY:
     raise ValueError("TAVILY_API_KEY not found in environment variables. Please check your .env file in the parent directory.")
+
+
+if __name__ == "__main__":
+    print('Printing the API keys...')
+    print('OPENAI_API_KEY: ', OPENAI_API_KEY)
+    print('MONGO_URI: ', MONGO_URI)
+    print('TAVILY_API_KEY: ', TAVILY_API_KEY)

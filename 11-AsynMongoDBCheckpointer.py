@@ -1,6 +1,6 @@
 # for documentation - https://langchain-ai.github.io/langgraph/how-tos/persistence_mongodb/
 from langchain_openai import ChatOpenAI
-from langchain.schema import HumanMessage, SystemMessage
+from langchain_core.messages import HumanMessage, SystemMessage
 from langgraph.graph import MessagesState, START, END, StateGraph
 from langgraph.checkpoint.mongodb.aio import AsyncMongoDBSaver
 
